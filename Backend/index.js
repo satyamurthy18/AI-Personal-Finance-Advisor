@@ -1,5 +1,6 @@
 require("dotenv").config();
 const express = require("express");
+
 const cookieParser = require("cookie-parser");
 const cors = require("cors"); // ✅ ADD THIS
 
@@ -17,6 +18,8 @@ const budgetRoutes = require("./routes/budgetRoutes");
 const aiAnalysisRoutes = require("./routes/aiAnalysisRoutes");
 
 const app = express();
+app.set("trust proxy", 1);
+
 
 /* ------------------- GLOBAL MIDDLEWARES ------------------- */
 app.use(express.json());

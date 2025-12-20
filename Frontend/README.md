@@ -1,16 +1,49 @@
-# React + Vite
+# Finance Advisor - Frontend
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+React-based frontend application for the AI Personal Finance Advisor.
 
-Currently, two official plugins are available:
+## 🚀 Quick Start
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+```bash
+npm install
+npm run dev
+```
 
-## React Compiler
+The application will start on http://localhost:5173
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+## 📦 Build for Production
 
-## Expanding the ESLint configuration
+```bash
+npm run build
+npm run preview
+```
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+## 🛠️ Technologies
+
+- **React 19** - UI framework
+- **Vite** - Build tool
+- **React Router DOM** - Routing
+- **Axios** - HTTP client
+- **Recharts** - Data visualization
+
+## 📁 Project Structure
+
+```
+src/
+├── api/              # API client functions
+├── auth/             # Authentication components
+├── components/       # Reusable UI components
+├── pages/           # Page components
+├── App.jsx          # Main application component
+└── main.jsx         # Entry point
+```
+
+## 🎨 Features
+
+- Tab-based navigation
+- Responsive design
+- Interactive charts
+- Real-time updates
+- Modern UI/UX
+
+For complete documentation, see the main [README.md](../README.md) in the root directory.

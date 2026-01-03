@@ -43,6 +43,16 @@ export default function AllInsightCard() {
     }
   };
 
+  const cleanText = (text) => {
+    if (!text) return "";
+    return text
+      .replace(/\*\*/g, '') // Remove bold markers
+      .replace(/\*/g, '') // Remove all asterisks
+      .replace(/^[-•]\s*/gm, '') // Remove bullet points
+      .replace(/\n{3,}/g, '\n\n') // Remove excessive newlines
+      .trim();
+  };
+
   const parseAnalysis = (text) => {
     if (!text) return null;
 
@@ -53,56 +63,95 @@ export default function AllInsightCard() {
       savingsGoal: "",
     };
 
-    // Try to extract structured sections
-    const overviewMatch = text.match(/(?:Spending Overview|Overview|Summary)[:：]\s*(.+?)(?=\n\n|\n\d+\.|$)/is);
+    // Clean the text first
+    const cleanTextContent = cleanText(text);
+
+    // Try to extract structured sections with better patterns
+    const overviewMatch = cleanTextContent.match(/(?:Spending Overview|Overview|Summary)[:：]?\s*(.+?)(?=\n\n|\n\d+\.|Top Spending|Insights|Savings|$)/is);
     if (overviewMatch) {
-      sections.overview = overviewMatch[1].trim();
+      sections.overview = cleanText(overviewMatch[1]);
     }
 
-    // Extract top categories
-    const categoriesMatch = text.match(/(?:Top Spending Categories|Top Categories)[:：]\s*(.+?)(?=\n\n|\n\d+\.|Insights|Recommendations|$)/is);
+    // Extract top categories - look for patterns like "Category: ₹amount" or numbered lists
+    const categoriesMatch = cleanTextContent.match(/(?:Top Spending Categories|Top Categories)[:：]?\s*(.+?)(?=\n\n|\n\d+\.|Insights|Recommendations|Savings|$)/is);
     if (categoriesMatch) {
       const categoryText = categoriesMatch[1];
-      const categoryLines = categoryText.split('\n').filter(line => line.trim());
-      sections.topCategories = categoryLines.slice(0, 3).map(line => line.trim().replace(/^[-•*]\s*/, ''));
+      const categoryLines = categoryText
+        .split('\n')
+        .filter(line => line.trim() && !line.match(/^\d+\.?\s*$/)) // Remove empty or just numbers
+        .map(line => cleanText(line))
+        .filter(line => line.length > 0);
+      
+      // Extract category:amount pairs
+      sections.topCategories = categoryLines
+        .slice(0, 3)
+        .map(line => {
+          // Try to match "Category: ₹amount" or "Category: amount"
+          const match = line.match(/(.+?):\s*₹?([\d,]+\.?\d*)/i);
+          if (match) {
+            return `${match[1].trim()}: ₹${match[2]}`;
+          }
+          // If no match, return cleaned line
+          return line.replace(/^\d+\.?\s*/, '').trim();
+        })
+        .filter(cat => cat && cat !== '*');
     }
 
-    // Extract insights
-    const insightsMatch = text.match(/(?:Insights|Recommendations|Insights & Recommendations)[:：]\s*(.+?)(?=\n\n|\n\d+\.|Savings|$)/is);
+    // Extract insights - look for bullet points or numbered items
+    const insightsMatch = cleanTextContent.match(/(?:Insights|Recommendations|Insights & Recommendations)[:：]?\s*(.+?)(?=\n\n|\n\d+\.|Savings|Goal|$)/is);
     if (insightsMatch) {
       const insightsText = insightsMatch[1];
-      const insightLines = insightsText.split('\n').filter(line => line.trim());
-      sections.insights = insightLines.map(line => line.trim().replace(/^[-•*]\s*/, ''));
+      const insightLines = insightsText
+        .split('\n')
+        .filter(line => line.trim() && !line.match(/^\d+\.?\s*$/))
+        .map(line => cleanText(line))
+        .filter(line => line.length > 0 && line !== '*');
+      
+      sections.insights = insightLines.slice(0, 5); // Limit to 5 insights
     }
 
     // Extract savings goal
-    const savingsMatch = text.match(/(?:Savings Goal|Savings|Goal)[:：]\s*(.+?)(?=\n\n|$)/is);
+    const savingsMatch = cleanTextContent.match(/(?:Savings Goal|Savings|Goal)[:：]?\s*(.+?)(?=\n\n|$)/is);
     if (savingsMatch) {
-      sections.savingsGoal = savingsMatch[1].trim();
+      sections.savingsGoal = cleanText(savingsMatch[1]);
     }
 
     // If structured parsing failed, try to split by numbered sections
     if (!sections.overview && !sections.topCategories.length) {
-      const numberedSections = text.split(/\n\s*\d+\.\s*\*\*/);
+      const numberedSections = cleanTextContent.split(/\n\s*\d+\.\s*/);
       if (numberedSections.length > 1) {
-        sections.overview = numberedSections[1]?.split('\n').slice(1).join(' ').trim() || "";
+        sections.overview = cleanText(numberedSections[1]?.split('\n').slice(1).join(' ') || numberedSections[1] || "");
         if (numberedSections[2]) {
-          const categories = numberedSections[2].split('\n').filter(l => l.trim());
+          const categories = numberedSections[2]
+            .split('\n')
+            .filter(l => l.trim() && l !== '*')
+            .map(l => cleanText(l))
+            .filter(l => l.length > 0);
           sections.topCategories = categories.slice(0, 3);
         }
         if (numberedSections[3]) {
-          const insights = numberedSections[3].split('\n').filter(l => l.trim());
-          sections.insights = insights;
+          const insights = numberedSections[3]
+            .split('\n')
+            .filter(l => l.trim() && l !== '*')
+            .map(l => cleanText(l))
+            .filter(l => l.length > 0);
+          sections.insights = insights.slice(0, 5);
         }
         if (numberedSections[4]) {
-          sections.savingsGoal = numberedSections[4].trim();
+          sections.savingsGoal = cleanText(numberedSections[4]);
         }
       }
     }
 
-    // Fallback: if still no structure, use the whole text as overview
+    // Final cleanup - remove any remaining asterisks or empty items
+    sections.overview = sections.overview.replace(/\*/g, '').trim();
+    sections.topCategories = sections.topCategories.filter(cat => cat && cat !== '*' && cat.length > 0);
+    sections.insights = sections.insights.filter(insight => insight && insight !== '*' && insight.length > 0);
+    sections.savingsGoal = sections.savingsGoal.replace(/\*/g, '').trim();
+
+    // Fallback: if still no structure, use the whole text as overview (cleaned)
     if (!sections.overview && !sections.topCategories.length) {
-      sections.overview = text;
+      sections.overview = cleanText(text);
     }
 
     return sections;
@@ -176,11 +225,12 @@ export default function AllInsightCard() {
               </div>
               <p style={{
                 margin: 0,
-                lineHeight: "1.6",
+                lineHeight: "1.7",
                 color: "var(--text)",
-                fontSize: "14px",
+                fontSize: "15px",
+                fontWeight: "400",
               }}>
-                {parsedAnalysis.overview}
+                {parsedAnalysis.overview.replace(/\*\*/g, '').replace(/\*/g, '')}
               </p>
             </div>
           )}
@@ -212,9 +262,14 @@ export default function AllInsightCard() {
               </div>
               <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
                 {parsedAnalysis.topCategories.map((category, idx) => {
-                  const match = category.match(/(.+?):\s*₹?([\d,]+\.?\d*)/i);
-                  const categoryName = match ? match[1].trim() : category;
-                  const amount = match ? match[2] : "";
+                  // Clean category string
+                  const cleanCategory = category.replace(/\*/g, '').trim();
+                  const match = cleanCategory.match(/(.+?):\s*₹?([\d,]+\.?\d*)/i);
+                  const categoryName = match ? match[1].trim() : cleanCategory.replace(/:\s*₹?[\d,]+\.?\d*/i, '').trim();
+                  const amount = match ? match[2] : cleanCategory.match(/₹?([\d,]+\.?\d*)/)?.[1] || "";
+                  
+                  if (!categoryName || categoryName === '*' || categoryName.length === 0) return null;
+                  
                   return (
                     <div
                       key={idx}
@@ -222,16 +277,16 @@ export default function AllInsightCard() {
                         display: "flex",
                         alignItems: "center",
                         justifyContent: "space-between",
-                        padding: "12px",
+                        padding: "14px",
                         background: "#f8fafc",
                         borderRadius: "8px",
                         border: "1px solid var(--border)",
                       }}
                     >
-                      <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
                         <span style={{
-                          width: "24px",
-                          height: "24px",
+                          width: "28px",
+                          height: "28px",
                           borderRadius: "6px",
                           background: idx === 0 ? "#f59e0b" : idx === 1 ? "#64748b" : "#94a3b8",
                           display: "flex",
@@ -239,22 +294,27 @@ export default function AllInsightCard() {
                           justifyContent: "center",
                           color: "white",
                           fontWeight: "700",
-                          fontSize: "12px",
+                          fontSize: "13px",
                         }}>
                           {idx + 1}
                         </span>
-                        <span style={{ fontSize: "14px", fontWeight: "500", color: "var(--text)" }}>
+                        <span style={{ 
+                          fontSize: "15px", 
+                          fontWeight: "600", 
+                          color: "var(--text)",
+                          textTransform: "capitalize",
+                        }}>
                           {categoryName}
                         </span>
                       </div>
                       {amount && (
-                        <span style={{ fontSize: "15px", fontWeight: "700", color: "var(--danger)" }}>
+                        <span style={{ fontSize: "16px", fontWeight: "700", color: "var(--danger)" }}>
                           ₹{amount}
                         </span>
                       )}
                     </div>
                   );
-                })}
+                }).filter(Boolean)}
               </div>
             </div>
           )}
@@ -285,29 +345,42 @@ export default function AllInsightCard() {
                 </h4>
               </div>
               <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
-                {parsedAnalysis.insights.map((insight, idx) => (
-                  <div
-                    key={idx}
-                    style={{
-                      display: "flex",
-                      gap: "12px",
-                      padding: "12px",
-                      background: "#f0f9ff",
-                      borderRadius: "8px",
-                      borderLeft: "3px solid #3b82f6",
-                    }}
-                  >
-                    <span style={{ fontSize: "16px", flexShrink: 0 }}>✓</span>
-                    <p style={{
-                      margin: 0,
-                      fontSize: "14px",
-                      lineHeight: "1.6",
-                      color: "var(--text)",
-                    }}>
-                      {insight}
-                    </p>
-                  </div>
-                ))}
+                {parsedAnalysis.insights
+                  .filter(insight => insight && insight.trim() !== '*' && insight.trim().length > 0)
+                  .map((insight, idx) => {
+                    const cleanInsight = insight.replace(/\*/g, '').trim();
+                    if (!cleanInsight || cleanInsight.length === 0) return null;
+                    
+                    return (
+                      <div
+                        key={idx}
+                        style={{
+                          display: "flex",
+                          gap: "12px",
+                          padding: "14px",
+                          background: "#f0f9ff",
+                          borderRadius: "8px",
+                          borderLeft: "3px solid #3b82f6",
+                        }}
+                      >
+                        <span style={{ 
+                          fontSize: "18px", 
+                          flexShrink: 0,
+                          color: "#3b82f6",
+                        }}>✓</span>
+                        <p style={{
+                          margin: 0,
+                          fontSize: "15px",
+                          lineHeight: "1.7",
+                          color: "var(--text)",
+                          fontWeight: "400",
+                        }}>
+                          {cleanInsight}
+                        </p>
+                      </div>
+                    );
+                  })
+                  .filter(Boolean)}
               </div>
             </div>
           )}
@@ -339,17 +412,17 @@ export default function AllInsightCard() {
               </div>
               <p style={{
                 margin: 0,
-                lineHeight: "1.6",
+                lineHeight: "1.7",
                 color: "var(--text)",
-                fontSize: "14px",
+                fontSize: "15px",
                 fontWeight: "500",
               }}>
-                {parsedAnalysis.savingsGoal}
+                {parsedAnalysis.savingsGoal.replace(/\*/g, '').trim()}
               </p>
             </div>
           )}
 
-          {/* Fallback: If parsing failed, show original text */}
+          {/* Fallback: If parsing failed, show original text (cleaned) */}
           {!parsedAnalysis.overview && !parsedAnalysis.topCategories.length && analysis?.summary && (
             <div style={{
               background: "linear-gradient(135deg, #667eea10 0%, #764ba210 100%)",
@@ -360,9 +433,9 @@ export default function AllInsightCard() {
                 whiteSpace: "pre-wrap",
                 lineHeight: "1.8",
                 color: "var(--text)",
-                fontSize: "14px",
+                fontSize: "15px",
               }}>
-                {analysis.summary}
+                {cleanText(analysis.summary)}
               </div>
             </div>
           )}

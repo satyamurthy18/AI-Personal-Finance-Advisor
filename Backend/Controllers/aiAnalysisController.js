@@ -16,21 +16,19 @@ function generateBasicAnalysis(summary, totalSpent, transactionCount) {
     .map(([cat, amount]) => ({ category: cat, amount }));
 
   const topCategory = categories[0];
-  const analysis = `
-**Spending Overview:**
-You spent a total of ₹${totalSpent.toFixed(2)} across ${transactionCount} transactions this month.
+  const avgTransaction = totalSpent / transactionCount;
+  
+  const analysis = `Spending Overview:
+You spent a total of ₹${totalSpent.toFixed(2)} across ${transactionCount} ${transactionCount === 1 ? 'transaction' : 'transactions'} this month. Your average transaction amount is ₹${avgTransaction.toFixed(2)}.
 
-**Top Spending Categories:**
-${categories.slice(0, 3).map((c, i) => `${i + 1}. ${c.category.charAt(0).toUpperCase() + c.category.slice(1)}: ₹${c.amount.toFixed(2)}`).join("\n")}
+Top Spending Categories:
+${categories.slice(0, 3).map((c) => `${c.category.charAt(0).toUpperCase() + c.category.slice(1)}: ₹${c.amount.toFixed(2)}`).join("\n")}
 
-**Insights & Recommendations:**
-- Your highest spending category is ${topCategory.category} (₹${topCategory.amount.toFixed(2)})
-- Consider reviewing expenses in this category to identify potential savings
-- Track your spending patterns to better manage your budget
+Insights & Recommendations:
+Your highest spending category is ${topCategory.category.charAt(0).toUpperCase() + topCategory.category.slice(1)} with ₹${topCategory.amount.toFixed(2)} spent this month. Consider reviewing expenses in this category to identify potential savings opportunities. Track your spending patterns regularly to better manage your budget and identify areas for improvement. Setting spending limits for high-expense categories can help control your monthly outflow.
 
-**Savings Goal:**
-Based on your current spending, consider setting a savings goal of 10-20% of your monthly income. This would help build an emergency fund and achieve long-term financial goals.
-  `.trim();
+Savings Goal:
+Based on your current spending patterns, consider setting a savings goal of 10-20% of your monthly income. This would help you build an emergency fund and work towards long-term financial goals. Start by identifying non-essential expenses that can be reduced or eliminated.`.trim();
 
   return analysis;
 }

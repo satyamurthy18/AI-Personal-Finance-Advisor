@@ -13,22 +13,28 @@ const genAI = process.env.GEMINI_API_KEY
 function generateBasicAnalysis(summary, totalSpent, transactionCount) {
   const categories = Object.entries(summary)
     .sort((a, b) => b[1] - a[1])
-    .map(([cat, amount]) => ({ category: cat, amount }));
+    .map(([cat, amount]) => ({ 
+      category: cat, 
+      amount,
+      percentage: ((amount / totalSpent) * 100).toFixed(1)
+    }));
 
   const topCategory = categories[0];
+  const secondCategory = categories[1];
   const avgTransaction = totalSpent / transactionCount;
+  const potentialSavings = topCategory.amount * 0.15; // 15% reduction potential
   
   const analysis = `Spending Overview:
-You spent a total of ₹${totalSpent.toFixed(2)} across ${transactionCount} ${transactionCount === 1 ? 'transaction' : 'transactions'} this month. Your average transaction amount is ₹${avgTransaction.toFixed(2)}.
+You spent a total of ₹${totalSpent.toFixed(2)} across ${transactionCount} ${transactionCount === 1 ? 'transaction' : 'transactions'} this month, with an average transaction value of ₹${avgTransaction.toFixed(2)}. Your highest spending category is ${topCategory.category.charAt(0).toUpperCase() + topCategory.category.slice(1)}, accounting for ${topCategory.percentage}% of your total expenses.
 
 Top Spending Categories:
 ${categories.slice(0, 3).map((c) => `${c.category.charAt(0).toUpperCase() + c.category.slice(1)}: ₹${c.amount.toFixed(2)}`).join("\n")}
 
 Insights & Recommendations:
-Your highest spending category is ${topCategory.category.charAt(0).toUpperCase() + topCategory.category.slice(1)} with ₹${topCategory.amount.toFixed(2)} spent this month. Consider reviewing expenses in this category to identify potential savings opportunities. Track your spending patterns regularly to better manage your budget and identify areas for improvement. Setting spending limits for high-expense categories can help control your monthly outflow.
+Reduce ${topCategory.category.charAt(0).toUpperCase() + topCategory.category.slice(1)} spending by 15-20% to save approximately ₹${potentialSavings.toFixed(2)} monthly, which represents ${topCategory.percentage}% of your current spending in this category. Set a monthly budget limit of ₹${(topCategory.amount * 0.85).toFixed(2)} for ${topCategory.category} to control expenses effectively. Review individual transactions in ${topCategory.category} to identify and eliminate unnecessary or recurring expenses that can be reduced. ${secondCategory ? `Consider reallocating some spending from ${topCategory.category} (${topCategory.percentage}%) to ${secondCategory.category.charAt(0).toUpperCase() + secondCategory.category.slice(1)} to better balance your expenses.` : 'Track your daily spending patterns to identify opportunities for cost reduction across all categories.'}
 
 Savings Goal:
-Based on your current spending patterns, consider setting a savings goal of 10-20% of your monthly income. This would help you build an emergency fund and work towards long-term financial goals. Start by identifying non-essential expenses that can be reduced or eliminated.`.trim();
+Based on your current spending of ₹${totalSpent.toFixed(2)}, aim to save ₹${(totalSpent * 0.15).toFixed(2)} monthly (15% of spending) by reducing expenses in ${topCategory.category} and other high-cost categories. This savings target is achievable by cutting ${topCategory.category} spending by 15% and optimizing other category expenses. Start by setting monthly limits for each spending category and tracking your progress weekly.`.trim();
 
   return analysis;
 }

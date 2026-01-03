@@ -98,14 +98,28 @@ export default function AllInsightCard() {
     }
 
     // Extract insights - look for bullet points or numbered items
-    const insightsMatch = cleanTextContent.match(/(?:Insights|Recommendations|Insights & Recommendations)[:：]?\s*(.+?)(?=\n\n|\n\d+\.|Savings|Goal|$)/is);
+    const insightsMatch = cleanTextContent.match(/(?:Insights|Recommendations|Insights & Recommendations)[:：]?\s*(.+?)(?=\n\n|\n\d+\.|Savings|Goal|4\.|$)/is);
     if (insightsMatch) {
       const insightsText = insightsMatch[1];
       const insightLines = insightsText
         .split('\n')
-        .filter(line => line.trim() && !line.match(/^\d+\.?\s*$/))
+        .filter(line => {
+          const trimmed = line.trim();
+          // Filter out empty lines, just numbers, or very short lines
+          return trimmed && 
+                 trimmed.length > 20 && // Minimum length for a complete insight
+                 !trimmed.match(/^\d+\.?\s*$/) && 
+                 !trimmed.match(/^[&:：]\s*$/); // Filter out incomplete lines like "& Recommendations:"
+        })
         .map(line => cleanText(line))
-        .filter(line => line.length > 0 && line !== '*');
+        .filter(line => {
+          // Additional validation: ensure it's a complete sentence
+          const cleaned = line.trim();
+          return cleaned.length > 20 && 
+                 cleaned !== '*' && 
+                 !cleaned.startsWith('&') &&
+                 !cleaned.match(/^[&:：]\s*Recommendations?:?\s*$/i); // Filter incomplete headers
+        });
       
       sections.insights = insightLines.slice(0, 5); // Limit to 5 insights
     }
@@ -346,10 +360,22 @@ export default function AllInsightCard() {
               </div>
               <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
                 {parsedAnalysis.insights
-                  .filter(insight => insight && insight.trim() !== '*' && insight.trim().length > 0)
+                  .filter(insight => {
+                    const cleaned = insight?.replace(/\*/g, '').trim();
+                    // Filter out incomplete sentences, headers, or very short text
+                    return cleaned && 
+                           cleaned.length > 25 && // Minimum length for complete insight
+                           !cleaned.match(/^[&:：]\s*Recommendations?:?\s*$/i) && // Filter headers
+                           !cleaned.match(/^Insights?\s*[&:：]/i) && // Filter incomplete headers
+                           cleaned !== '*' &&
+                           !cleaned.startsWith('&') &&
+                           cleaned.endsWith('.') || cleaned.match(/[.!?]$/); // Should end with punctuation
+                  })
                   .map((insight, idx) => {
                     const cleanInsight = insight.replace(/\*/g, '').trim();
-                    if (!cleanInsight || cleanInsight.length === 0) return null;
+                    // Ensure it's a complete sentence
+                    if (!cleanInsight || cleanInsight.length < 25) return null;
+                    if (cleanInsight.match(/^[&:：]\s*Recommendations?:?\s*$/i)) return null;
                     
                     return (
                       <div
@@ -357,16 +383,17 @@ export default function AllInsightCard() {
                         style={{
                           display: "flex",
                           gap: "12px",
-                          padding: "14px",
+                          padding: "16px",
                           background: "#f0f9ff",
                           borderRadius: "8px",
                           borderLeft: "3px solid #3b82f6",
                         }}
                       >
                         <span style={{ 
-                          fontSize: "18px", 
+                          fontSize: "20px", 
                           flexShrink: 0,
                           color: "#3b82f6",
+                          fontWeight: "600",
                         }}>✓</span>
                         <p style={{
                           margin: 0,
@@ -381,6 +408,18 @@ export default function AllInsightCard() {
                     );
                   })
                   .filter(Boolean)}
+                {parsedAnalysis.insights.length === 0 && (
+                  <div style={{
+                    padding: "16px",
+                    background: "#fef3c7",
+                    borderRadius: "8px",
+                    borderLeft: "3px solid #f59e0b",
+                    fontSize: "14px",
+                    color: "#92400e",
+                  }}>
+                    No specific insights available. Generate a new analysis to get personalized recommendations.
+                  </div>
+                )}
               </div>
             </div>
           )}

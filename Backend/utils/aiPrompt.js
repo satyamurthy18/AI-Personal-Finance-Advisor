@@ -5,7 +5,7 @@ const buildAIPrompt = (summary, totalSpent, transactionCount) => {
     .join("\n");
 
   return `
-You are a helpful personal finance advisor. Analyze the following spending data and provide actionable insights.
+You are a helpful personal finance advisor. Analyze the following spending data and provide clear, actionable insights.
 
 MONTHLY SPENDING SUMMARY:
 Total Spent: ₹${totalSpent.toFixed(2)}
@@ -14,20 +14,26 @@ Number of Transactions: ${transactionCount}
 Category Breakdown:
 ${categories}
 
-Please provide a comprehensive analysis in the following format:
+IMPORTANT: Provide your response in this EXACT format:
 
-1. **Spending Overview**: A brief summary of the month's spending patterns (2-3 sentences)
+1. **Spending Overview**: 
+[Write 2-3 concise sentences summarizing the month's spending patterns. Be specific and mention key observations.]
 
-2. **Top Spending Categories**: Identify the top 3 categories where most money was spent
+2. **Top Spending Categories**: 
+[List exactly the top 3 categories, one per line, in this format: Category Name: ₹amount]
 
 3. **Insights & Recommendations**: 
-   - Areas where spending can be reduced
-   - Suggestions for better financial management
-   - Any unusual spending patterns noticed
+[Provide 3-4 actionable recommendations, one per line, each starting with a dash (-). Focus on specific areas to reduce spending and improve financial management.]
 
-4. **Savings Goal**: Suggest a realistic monthly savings target based on current spending
+4. **Savings Goal**: 
+[Suggest a realistic monthly savings target (as a percentage or amount) with a brief explanation of why this is achievable.]
 
-Keep the response clear, concise, and actionable. Use bullet points where appropriate. Format numbers with ₹ symbol.
+Guidelines:
+- Be concise and direct
+- Use ₹ symbol for all amounts
+- Focus on actionable advice
+- Keep each section brief (2-4 sentences max)
+- Use simple, clear language
 `;
 };
 
